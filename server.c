@@ -7,24 +7,17 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-#define BUFFER_SIZE 1024
-#define MAX_CLIENTS 5
+#define BUFFER_SIZE 4096
 #define LOG_FILE "server.log"
 
-void log_message(FILE *log_file, const char *message) {
-    time_t now;
-    time(&now);
-    char timestr[20];
-    strftime(timestr, 20, "%Y-%m-%d %H:%M:%S", localtime(&now));
+void log_activity(FILE *log, const char *message) {
+    time_t now = time(NULL);
+    char timestamp[20];
+    strftime(timestamp, 20, "%Y-%m-%d %H:%M:%S", localtime(&now));
     
-    fprintf(log_file, "[%s] %s\n", timestr, message);
-    printf("[%s] %s\n", timestr, message);
-}
-
-void error(const char *msg, FILE *log_file) {
-    log_message(log_file, msg);
-    perror(msg);
-    exit(1);
+    fprintf(log, "[%s] %s\n", timestamp, message);
+    printf("[%s] %s\n", timestamp, message);
+    fflush(log);
 }
 
 int main(int argc, char *argv[]) {
@@ -33,79 +26,80 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    FILE *log_file = fopen(LOG_FILE, "a");
-    if (!log_file) {
+    FILE *log = fopen(LOG_FILE, "a");
+    if (!log) {
         perror("Failed to open log file");
-        log_file = stdout;
+        log = stdout;
     }
 
     int port = atoi(argv[1]);
-    int sockfd, newsockfd;
-    struct sockaddr_in serv_addr, cli_addr;
-    socklen_t clilen;
-    char buffer[BUFFER_SIZE];
-
+    int server_fd, client_fd;
+    struct sockaddr_in address;
+    int addrlen = sizeof(address);
+    
     // Create socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        error("ERROR opening socket", log_file);
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        log_activity(log, "Socket creation failed");
+        exit(EXIT_FAILURE);
     }
 
-    // Initialize server address structure
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
 
-    // Bind socket to port
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        error("ERROR on binding", log_file);
+    // Bind socket
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        log_activity(log, "Bind failed");
+        exit(EXIT_FAILURE);
     }
 
-    // Listen for incoming connections
-    listen(sockfd, MAX_CLIENTS);
-    log_message(log_file, "Server started and listening for connections...");
+    // Listen
+    if (listen(server_fd, 5) < 0) {
+        log_activity(log, "Listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    log_activity(log, "Server started and listening...");
 
     while (1) {
-        // Accept a new connection
-        clilen = sizeof(cli_addr);
-        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        if (newsockfd < 0) {
-            error("ERROR on accept", log_file);
+        // Accept connection
+        if ((client_fd = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
+            log_activity(log, "Accept failed");
+            continue;
         }
 
-        char client_info[100];
-        snprintf(client_info, sizeof(client_info), 
-                "New client connected: %s:%d", 
-                inet_ntoa(cli_addr.sin_addr), 
-                ntohs(cli_addr.sin_port));
-        log_message(log_file, client_info);
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &address.sin_addr, client_ip, INET_ADDRSTRLEN);
+        int client_port = ntohs(address.sin_port);
+        
+        char client_id[50];
+        snprintf(client_id, sizeof(client_id), "%s:%d-%04d", client_ip, client_port, rand() % 10000);
+        
+        char log_msg[100];
+        snprintf(log_msg, sizeof(log_msg), "Client %s connected", client_id);
+        log_activity(log, log_msg);
 
-        // Read message from client
-        memset(buffer, 0, BUFFER_SIZE);
-        int n = read(newsockfd, buffer, BUFFER_SIZE - 1);
-        if (n < 0) {
-            error("ERROR reading from socket", log_file);
+        // File transfer loop
+        while (1) {
+            char buffer[BUFFER_SIZE] = {0};
+            ssize_t bytes_read = read(client_fd, buffer, BUFFER_SIZE);
+            
+            if (bytes_read <= 0) break; // Client disconnected or error
+            
+            // Log received content
+            snprintf(log_msg, sizeof(log_msg), "Received from %s: %ld bytes", client_id, bytes_read);
+            log_activity(log, log_msg);
+            log_activity(log, "----- CONTENT START -----");
+            log_activity(log, buffer);
+            log_activity(log, "----- CONTENT END -----");
         }
 
-        char msg_log[BUFFER_SIZE + 100];
-        snprintf(msg_log, sizeof(msg_log), 
-                "Received from %s:%d: %s", 
-                inet_ntoa(cli_addr.sin_addr), 
-                ntohs(cli_addr.sin_port),
-                buffer);
-        log_message(log_file, msg_log);
-
-        // Close client connection
-        close(newsockfd);
-        snprintf(client_info, sizeof(client_info),
-                "Client %s:%d disconnected",
-                inet_ntoa(cli_addr.sin_addr),
-                ntohs(cli_addr.sin_port));
-        log_message(log_file, client_info);
+        snprintf(log_msg, sizeof(log_msg), "Client %s disconnected", client_id);
+        log_activity(log, log_msg);
+        close(client_fd);
     }
 
-    close(sockfd);
-    fclose(log_file);
+    close(server_fd);
+    fclose(log);
     return 0;
 }

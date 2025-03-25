@@ -1,0 +1,46 @@
+[2025-03-25 19:37:08] ERROR on binding
+[2025-03-25 19:45:09] Server started and listening...
+[2025-03-25 19:45:25] Client 127.0.0.1:56366-9383 connected
+[2025-03-25 19:45:25] Received from 127.0.0.1:56366-9383: 348 bytes
+[2025-03-25 19:45:25] ----- CONTENT START -----
+[2025-03-25 19:45:25] This is a longer message intended to test how the server handles multi-line content and larger text blocks. 
+
+It includes:
+- Multiple paragraphs
+- Different line lengths
+- Special characters: !@#$%^&*()
+- Numbers: 1234567890
+
+The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!
+[2025-03-25 19:45:25] ----- CONTENT END -----
+[2025-03-25 19:45:25] Client 127.0.0.1:56366-9383 disconnected
+[2025-03-25 19:46:08] Client 127.0.0.1:39308-0886 connected
+[2025-03-25 19:46:08] Received from 127.0.0.1:39308-0886: 348 bytes
+[2025-03-25 19:46:08] ----- CONTENT START -----
+[2025-03-25 19:46:08] This is a longer message intended to test how the server handles multi-line content and larger text blocks. 
+
+It includes:
+- Multiple paragraphs
+- Different line lengths
+- Special characters: !@#$%^&*()
+- Numbers: 1234567890
+
+The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!
+[2025-03-25 19:46:08] ----- CONTENT END -----
+[2025-03-25 19:46:08] Received from 127.0.0.1:39308-0886: 192 bytes
+[2025-03-25 19:46:08] ----- CONTENT START -----
+[2025-03-25 19:46:08] #include <stdio.h>
+
+int main() {
+    printf("Hello World!\n");
+    
+    for(int i=0; i<10; i++) {
+        printf("Count: %d\n", i);
+    }
+    
+    return 0;
+}
+
+/* This is a sample C program */
+[2025-03-25 19:46:08] ----- CONTENT END -----
+[2025-03-25 19:46:08] Client 127.0.0.1:39308-0886 disconnected
