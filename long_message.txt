@@ -1,9 +1,0 @@
-This is a longer message intended to test how the server handles multi-line content and larger text blocks. 
-
-It includes:
-- Multiple paragraphs
-- Different line lengths
-- Special characters: !@#$%^&*()
-- Numbers: 1234567890
-
-The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!
